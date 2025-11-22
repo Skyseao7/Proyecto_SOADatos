@@ -9,11 +9,10 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 0; }
-        header { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        header { background: #2c3e50; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 200; position: relative; }
         .container { display: grid; grid-template-columns: 320px 1fr; gap: 25px; padding: 25px; height: 90vh; }
         
-        /* Estilos de la Barra Lateral */
-        .sidebar { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; }
+        .sidebar { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; z-index: 10; position: relative; }
         .sidebar h3 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         
         label { font-size: 0.85rem; font-weight: bold; color: #7f8c8d; margin-bottom: -10px; }
@@ -23,17 +22,74 @@
 
         #map { width: 100%; height: 300px; border-radius: 8px; margin-top: 10px; border: 1px solid #eee; }
 
-        /* Estilos del Dashboard Principal */
-        .main { display: grid; grid-template-rows: auto 1fr 1fr; gap: 20px; overflow-y: auto; }
-        
+        /* Dashboard Principal */
+        .main { display: grid; grid-template-rows: auto 1fr 1fr; gap: 20px; overflow-y: auto; padding-top: 5px; padding-right: 10px; position: relative; z-index: 1; } 
         .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-        .kpi-card { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.2s; }
-        .kpi-card:hover { transform: translateY(-5px); }
-        .kpi-card h3 { margin: 0; font-size: 0.85rem; color: #95a5a6; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* --- ESTILOS DE TOOLTIPS --- */
+        .info-icon { 
+            font-size: 12px; border: 1px solid #ccc; border-radius: 50%; width: 18px; height: 18px; 
+            display: inline-flex; align-items: center; justify-content: center; color: #999; cursor: help; 
+            margin-left: 5px; position: relative; transition: all 0.2s; background: white;
+        }
+        .info-icon:hover { background-color: #2c3e50; color: white; border-color: #2c3e50; }
+
+        /* Burbuja */
+        .info-icon[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 130%; left: 50%; transform: translateX(-50%);
+            background-color: #2c3e50; color: #fff; padding: 10px; border-radius: 6px;
+            font-size: 0.8rem; white-space: normal; width: 200px; text-align: center;
+            z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            opacity: 0; animation: fadeIn 0.3s forwards; pointer-events: none; line-height: 1.4; font-weight: normal;
+        }
+        
+        /* Flecha */
+        .info-icon[data-tooltip]:hover::before {
+            content: ''; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+            border-width: 6px; border-style: solid; border-color: #2c3e50 transparent transparent transparent;
+            opacity: 0; animation: fadeIn 0.3s forwards; z-index: 9999;
+        }
+
+        /* CORRECCIÓN 1: KPIs -> Burbuja ABAJO */
+        .kpi-card .info-icon[data-tooltip]:hover::after { bottom: auto; top: 140%; }
+        .kpi-card .info-icon[data-tooltip]:hover::before { bottom: auto; top: 100%; border-color: transparent transparent #2c3e50 transparent; }
+
+        /* CORRECCIÓN 2: ELEMENTOS DERECHA */
+        .kpi-card:last-child .info-icon[data-tooltip]:hover::after,
+        .chart-box:last-child .info-icon[data-tooltip]:hover::after {
+            left: auto; right: 0; transform: translateX(10%);
+        }
+        .kpi-card:last-child .info-icon[data-tooltip]:hover::before,
+        .chart-box:last-child .info-icon[data-tooltip]:hover::before {
+            left: auto; right: 4px; transform: none;
+        }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        /* --- CORRECCIÓN DE CAPAS (Z-INDEX FIX) --- */
+        /* Esto soluciona que la tarjeta vecina tape el tooltip */
+        .kpi-card, .chart-box { 
+            background: white; padding: 20px; border-radius: 12px; 
+            text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            transition: transform 0.2s; position: relative; 
+            z-index: 1; /* Nivel base */
+        }
+
+        /* AL PASAR EL MOUSE, LA TARJETA SUBE AL FRENTE DE TODO */
+        .kpi-card:hover, .chart-box:hover { 
+            transform: translateY(-5px); 
+            border-bottom: 3px solid #3498db; 
+            z-index: 100; /* Nivel superior (Encima de sus vecinos) */
+        }
+
+        .kpi-card h3 { margin: 0; font-size: 0.85rem; color: #95a5a6; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: center; align-items: center; }
         .kpi-card p { margin: 10px 0 0; font-size: 1.8rem; font-weight: 800; color: #2c3e50; }
 
-        .charts-area { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .chart-box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; height: 320px; }
+        .charts-area { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; position: relative; z-index: 1; }
+        .chart-box { height: 320px; } /* chart-box ya tiene los estilos comunes arriba */
+        .chart-title { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
@@ -75,47 +131,61 @@
 
         <div class="main">
             <div class="kpis">
-                <div class="kpi-card"><h3>Temperatura</h3><p id="kpiTemp">--°C</p></div>
-                <div class="kpi-card"><h3>Viento</h3><p id="kpiViento">-- km/h</p></div>
-                <div class="kpi-card"><h3>Población</h3><p id="kpiPob">--</p></div>
-                <div class="kpi-card"><h3>PBI (Crecimiento)</h3><p id="kpiPbi" style="color:#27ae60;">--%</p></div>
+                <div class="kpi-card">
+                    <h3>Temperatura <span class="info-icon" data-tooltip="Temperatura actual del distrito obtenida en tiempo real vía satélite (Open-Meteo).">?</span></h3>
+                    <p id="kpiTemp">--°C</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>Viento <span class="info-icon" data-tooltip="Velocidad del viento en km/h. Un valor alto (>20) puede indicar riesgo.">?</span></h3>
+                    <p id="kpiViento">-- km/h</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>Población <span class="info-icon" data-tooltip="Cantidad total de habitantes del distrito según la última proyección oficial del INEI.">?</span></h3>
+                    <p id="kpiPob">--</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>PBI (Crecimiento) <span class="info-icon" data-tooltip="Producto Bruto Interno: Indica el porcentaje (%) de crecimiento o caída económica anual de esta zona.">?</span></h3>
+                    <p id="kpiPbi" style="color:#27ae60;">--%</p>
+                </div>
             </div>
 
             <div class="charts-area">
-                <div class="chart-box"><canvas id="chartClima"></canvas></div>
-                <div class="chart-box"><canvas id="chartRadar"></canvas></div>
+                <div class="chart-box">
+                    <div class="chart-title">Monitoreo Climático <span class="info-icon" data-tooltip="Comparativa de temperaturas mínima (noche), actual y máxima (día).">?</span></div>
+                    <canvas id="chartClima"></canvas>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-title">Índice de Vulnerabilidad <span class="info-icon" data-tooltip="Gráfico radial que cruza 4 variables (Pobreza, Salud, Clima, Densidad) para determinar el riesgo.">?</span></div>
+                    <canvas id="chartRadar"></canvas>
+                </div>
             </div>
 
-            <div class="chart-box" style="height: 250px;"><canvas id="chartMix"></canvas></div>
+            <div class="chart-box" style="height: 250px;">
+                <div class="chart-title">Tendencia Económica (PBI) <span class="info-icon" data-tooltip="Evolución histórica y proyección económica del distrito para el próximo año.">?</span></div>
+                <canvas id="chartMix"></canvas>
+            </div>
         </div>
     </div>
 
     <script>
-        // 1. CONFIGURACIÓN INICIAL
+        // *** LÓGICA DEL FRONTEND ***
         const API_URL = "http://127.0.0.1:8000";
         let todosLosLugares = []; 
         
         let map = L.map('map').setView([-9.19, -75.01], 5); 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
         let marker;
-
         let gClima, gRadar, gMix;
 
-        // 2. CARGAR DATOS MAESTROS
         async function iniciarSistema() {
             try {
                 const resp = await fetch(`${API_URL}/api/lugares`);
                 todosLosLugares = await resp.json();
                 
-                console.log("Base de datos descargada:", todosLosLugares);
-
-                // A. Obtener regiones únicas
+                // Ordenar Regiones A-Z
                 let regionesUnicas = [...new Set(todosLosLugares.map(item => item.region))];
-                
-                // B. ORDENAR ALFABÉTICAMENTE (A-Z)
                 regionesUnicas.sort((a, b) => a.localeCompare(b));
 
-                // C. Llenar el select
                 const selRegion = document.getElementById('selRegion');
                 regionesUnicas.forEach(reg => {
                     const opt = document.createElement('option');
@@ -130,13 +200,11 @@
             }
         }
 
-        // 3. LÓGICA DE FILTROS EN CASCADA (ORDENADA)
         function filtrarProvincias() {
             const regionSel = document.getElementById('selRegion').value;
             const selProv = document.getElementById('selProvincia');
             const selDist = document.getElementById('selDistrito');
 
-            // Resetear selects hijos
             selProv.innerHTML = '<option value="">-- Seleccione --</option>';
             selDist.innerHTML = '<option value="">-- Seleccione --</option>';
             selDist.disabled = true;
@@ -146,14 +214,10 @@
                 return;
             }
 
-            // A. Filtrar provincias de esa región
             const provincias = todosLosLugares.filter(l => l.region === regionSel);
             let provUnicas = [...new Set(provincias.map(p => p.provincia))];
-
-            // B. ORDENAR ALFABÉTICAMENTE
             provUnicas.sort((a, b) => a.localeCompare(b));
 
-            // C. Llenar select
             provUnicas.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p;
@@ -176,13 +240,9 @@
                 return;
             }
 
-            // A. Filtrar distritos de esa provincia
             let distritos = todosLosLugares.filter(l => l.region === regionSel && l.provincia === provSel);
-
-            // B. ORDENAR ALFABÉTICAMENTE (Por nombre de distrito)
             distritos.sort((a, b) => a.distrito.localeCompare(b.distrito));
 
-            // C. Llenar select
             distritos.forEach(d => {
                 const opt = document.createElement('option');
                 opt.value = d.distrito; 
@@ -193,7 +253,6 @@
             selDist.disabled = false;
         }
 
-        // 4. CARGAR DASHBOARD (ORQUESTACIÓN)
         async function cargarDashboard() {
             const distrito = document.getElementById('selDistrito').value;
             if (!distrito) return;
@@ -202,13 +261,10 @@
                 const resp = await fetch(`${API_URL}/api/dashboard/${distrito}`);
                 const data = await resp.json();
 
-                console.log("Orquestación completada:", data);
-
                 document.getElementById('kpiTemp').innerText = data.clima.temp_actual + "°C";
                 document.getElementById('kpiViento').innerText = data.clima.viento + " km/h";
                 document.getElementById('kpiPob').innerText = data.social.poblacion.toLocaleString();
                 
-                // Formato condicional para PBI (Verde si es positivo)
                 const pbiElem = document.getElementById('kpiPbi');
                 pbiElem.innerText = (data.social.pbi >= 0 ? "+" : "") + data.social.pbi + "%";
                 pbiElem.style.color = data.social.pbi >= 0 ? "#27ae60" : "#c0392b";
