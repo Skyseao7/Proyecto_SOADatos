@@ -52,11 +52,9 @@
             opacity: 0; animation: fadeIn 0.3s forwards; z-index: 9999;
         }
 
-        /* CORRECCIÓN 1: KPIs -> Burbuja ABAJO */
         .kpi-card .info-icon[data-tooltip]:hover::after { bottom: auto; top: 140%; }
         .kpi-card .info-icon[data-tooltip]:hover::before { bottom: auto; top: 100%; border-color: transparent transparent #2c3e50 transparent; }
 
-        /* CORRECCIÓN 2: ELEMENTOS DERECHA */
         .kpi-card:last-child .info-icon[data-tooltip]:hover::after,
         .chart-box:last-child .info-icon[data-tooltip]:hover::after {
             left: auto; right: 0; transform: translateX(10%);
@@ -67,28 +65,24 @@
         }
 
         @keyframes fadeIn { to { opacity: 1; } }
-
-        /* --- CORRECCIÓN DE CAPAS (Z-INDEX FIX) --- */
-        /* Esto soluciona que la tarjeta vecina tape el tooltip */
         .kpi-card, .chart-box { 
             background: white; padding: 20px; border-radius: 12px; 
             text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
             transition: transform 0.2s; position: relative; 
-            z-index: 1; /* Nivel base */
+            z-index: 1; 
         }
 
-        /* AL PASAR EL MOUSE, LA TARJETA SUBE AL FRENTE DE TODO */
         .kpi-card:hover, .chart-box:hover { 
             transform: translateY(-5px); 
             border-bottom: 3px solid #3498db; 
-            z-index: 100; /* Nivel superior (Encima de sus vecinos) */
+            z-index: 100; 
         }
 
         .kpi-card h3 { margin: 0; font-size: 0.85rem; color: #95a5a6; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: center; align-items: center; }
         .kpi-card p { margin: 10px 0 0; font-size: 1.8rem; font-weight: 800; color: #2c3e50; }
 
         .charts-area { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; position: relative; z-index: 1; }
-        .chart-box { height: 320px; } /* chart-box ya tiene los estilos comunes arriba */
+        .chart-box { height: 320px; } 
         .chart-title { font-size: 0.9rem; color: #7f8c8d; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
@@ -166,7 +160,6 @@
     </div>
 
     <script>
-        // *** LÓGICA DEL FRONTEND ***
         const API_URL = "http://127.0.0.1:8000";
         let todosLosLugares = []; 
         
@@ -180,7 +173,6 @@
                 const resp = await fetch(`${API_URL}/api/lugares`);
                 todosLosLugares = await resp.json();
                 
-                // Ordenar Regiones A-Z
                 let regionesUnicas = [...new Set(todosLosLugares.map(item => item.region))];
                 regionesUnicas.sort((a, b) => a.localeCompare(b));
 

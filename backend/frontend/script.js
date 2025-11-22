@@ -1,11 +1,9 @@
-// 1. Inicializar Mapa (Centrado en Perú)
 const map = L.map('map').setView([-9.19, -75.01], 5);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// Marcadores de regiones (Coinciden con el backend)
 const markers = {
     "Lima": [-12.04, -77.04],
     "Arequipa": [-16.40, -71.53],
@@ -14,7 +12,6 @@ const markers = {
     "Piura": [-5.19, -80.63]
 };
 
-// Agregar marcadores al mapa
 for (const [region, coords] of Object.entries(markers)) {
     L.marker(coords).addTo(map)
         .bindPopup(`<b>${region}</b><br>Click para ver datos`)
@@ -23,17 +20,13 @@ for (const [region, coords] of Object.entries(markers)) {
             actualizarDashboard();
         });
 }
-
-// Variables globales para gráficos (para poder destruirlos y redibujarlos)
 let chartClimaInstance = null;
 let chartSocialInstance = null;
 
-// 2. Función Principal: Llamar al Backend
 async function actualizarDashboard() {
     const region = document.getElementById('regionSelect').value;
     
     try {
-        // Petición al Backend FastAPI
         const response = await fetch(`http://127.0.0.1:8000/api/dashboard/${region}`);
         const data = await response.json();
         
@@ -67,11 +60,9 @@ function actualizarGraficos(data) {
     const ctxClima = document.getElementById('chartClima').getContext('2d');
     const ctxSocial = document.getElementById('chartSocial').getContext('2d');
 
-    // Destruir gráficos anteriores si existen
     if (chartClimaInstance) chartClimaInstance.destroy();
     if (chartSocialInstance) chartSocialInstance.destroy();
 
-    // Gráfico 1: Clima (Barra)
     chartClimaInstance = new Chart(ctxClima, {
         type: 'bar',
         data: {
@@ -85,8 +76,6 @@ function actualizarGraficos(data) {
         options: { responsive: true, plugins: { title: { display: true, text: 'Variables Climáticas (Tiempo Real)' } } }
     });
 
-    // Gráfico 2: Social (Doughnut - Ejemplo: Población vs Capacidad)
-    // Para efectos visuales, comparamos población vs un estimado
     chartSocialInstance = new Chart(ctxSocial, {
         type: 'doughnut',
         data: {
@@ -100,5 +89,4 @@ function actualizarGraficos(data) {
     });
 }
 
-// Cargar datos iniciales
 actualizarDashboard();

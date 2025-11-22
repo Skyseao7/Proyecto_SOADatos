@@ -1,6 +1,5 @@
 class IneiService:
     def __init__(self):
-        # Datos reales INEI (Proyección 2024)
         self.data_db = {
             "Amazonas": {"pob": 430000, "pbi": 1.5, "hospitales": 12},
             "Ancash": {"pob": 1200000, "pbi": 4.2, "hospitales": 45},
